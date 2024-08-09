@@ -9,23 +9,25 @@ namespace AdventureWorks.BAL.Service
     {
         public static string FiqlToLinq(string fiql)
         {
+            if (string.IsNullOrEmpty(fiql)) { return "1=1"; }
+
             // Split by semicolon for AND, and comma for OR
             fiql = fiql.Replace(" AND ", ";");
             fiql = fiql.Replace(" OR ", ",");
             fiql = fiql.Replace(" and ", ";");
             fiql = fiql.Replace(" or ", ",");
 
-            var andConditions = SplitConditions(fiql, ';');
+            var andConditions = SplitConditions(fiql, ',');
             var linqConditions = new List<string>();
 
             foreach (var andCondition in andConditions)
             {
-                var orConditions = SplitConditions(andCondition, ',');
+                var orConditions = SplitConditions(andCondition, ';');
                 var linqOrConditions = new List<string>();
 
                 foreach (var orCondition in orConditions)
                 {
-                    if (orCondition.Contains(";"))
+                    if (orCondition.Contains(","))
                     {
                         var fiqlloopString = FiqlToLinqLoop(orCondition.TrimStart('(').TrimEnd(')'));
                         linqOrConditions.Add($"{fiqlloopString}");
@@ -37,10 +39,10 @@ namespace AdventureWorks.BAL.Service
                     }
                 }
 
-                linqConditions.Add($"{startRoundBracate(linqOrConditions)}{string.Join(" OR ", linqOrConditions)}{endRoundBracate(linqOrConditions)}");
+                linqConditions.Add($"{startRoundBracate(linqOrConditions)}{string.Join(" AND ", linqOrConditions)}{endRoundBracate(linqOrConditions)}");
             }
 
-            return $"{startRoundBracate(linqConditions)}{string.Join(" AND ", linqConditions)}{endRoundBracate(linqConditions)}";
+            return $"{startRoundBracate(linqConditions)}{string.Join(" OR ", linqConditions)}{endRoundBracate(linqConditions)}";
         }
         static string startRoundBracate(List<string> conditions)
         {
@@ -72,17 +74,17 @@ namespace AdventureWorks.BAL.Service
             fiql = fiql.Replace(" and ", ";");
             fiql = fiql.Replace(" or ", ",");
 
-            var andConditions = SplitConditions(fiql, ';');
+            var andConditions = SplitConditions(fiql, ',');
             var linqConditions = new List<string>();
 
             foreach (var andCondition in andConditions)
             {
-                var orConditions = SplitConditions(andCondition, ',');
+                var orConditions = SplitConditions(andCondition, ';');
                 var linqOrConditions = new List<string>();
 
                 foreach (var orCondition in orConditions)
                 {
-                    if (orCondition.Contains(";"))
+                    if (orCondition.Contains(","))
                     {
                         var fiqlloopString = FiqlToLinqLoop(orCondition.TrimStart('(').TrimEnd(')'));
                         linqOrConditions.Add($"{fiqlloopString}");
@@ -144,9 +146,9 @@ namespace AdventureWorks.BAL.Service
                     }
                 }
 
-                linqConditions.Add($"{startRoundBracate(linqOrConditions)}{string.Join(" OR ", linqOrConditions)}{endRoundBracate(linqOrConditions)}");
+                linqConditions.Add($"{startRoundBracate(linqOrConditions)}{string.Join(" AND ", linqOrConditions)}{endRoundBracate(linqOrConditions)}");
             }
-            return $"{startRoundBracate(linqConditions)}{string.Join(" AND ", linqConditions)}{endRoundBracate(linqConditions)}";
+            return $"{startRoundBracate(linqConditions)}{string.Join(" OR ", linqConditions)}{endRoundBracate(linqConditions)}";
         }
 
         private static IEnumerable<string> SplitConditions(string query, char separator)
