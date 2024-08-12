@@ -8,17 +8,17 @@ namespace AdventureWorks.API.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class CustomerController : ControllerBase
+    public class AddressController : ControllerBase
     {
-        private readonly ICustomerService customerService;
-        public CustomerController(ICustomerService customerService)
+        private readonly IAddressService AddressService;
+        public AddressController(IAddressService AddressService)
         {
-            this.customerService = customerService;
+            this.AddressService = AddressService;
         }
         [HttpGet("{query?}")]
         public async Task<ActionResult<dynamic>> Get(string? query)
         {
-            var response = await customerService.Get(query ?? "");
+            var response = await AddressService.GetDynamic(query ?? "");
             return Ok(response);
         }
     }     

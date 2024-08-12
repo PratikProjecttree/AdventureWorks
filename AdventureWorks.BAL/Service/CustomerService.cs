@@ -15,26 +15,33 @@ namespace AdventureWorks.BAL.Service
         private readonly dbContext context;
         private readonly IMapper _mapper;
         private readonly IDbConnection _dbConnection;
-        public CustomerService(dbContext context, IMapper mapper, IDbConnection dbConnection)
+        private readonly IAddressService _addressService;
+        public CustomerService(dbContext context, IMapper mapper, IDbConnection dbConnection, IAddressService addressService)
         {
             this.context = context;
             _mapper = mapper;
             _dbConnection = dbConnection;
+            _addressService = addressService;
         }
-        public dynamic Get(string query)
+        public async Task<dynamic> Get(string query)
         {
-            var queryParts = query.Split('&');
-            var filter = (queryParts.Where(x => x.StartsWith("filter=")).FirstOrDefault() ?? "").Replace("filter=", "");
-            var select = (queryParts.Where(x => x.StartsWith("select=")).FirstOrDefault() ?? "").Replace("select=", "");
-            var predicate = ConvertFiqlToLinq.FiqlToLinq(filter);
             IQueryable<Customer> result = context.Customers;
-            var customerResponse = result.Select($"new ({select})").Where(predicate).ToDynamicList();
+            var customerResponse = await ResponseToDynamic.contextResponse(result, query);
 
-            var retVal = (JsonSerializer.Deserialize<List<CustomerResponse>>(JsonSerializer.Serialize(customerResponse))) ?? new List<CustomerResponse>();
+            List<CustomerResponse> retVal = (JsonSerializer.Deserialize<List<CustomerResponse>>(JsonSerializer.Serialize(customerResponse))) ?? new List<CustomerResponse>();
 
-            dynamic dynamic = ResponseToDynamic.ConvertTo(retVal, select);
+            var includes = ResponseToDynamic.getInclude(query);
 
-            return dynamic;
+            var addressQuery = includes.FirstOrDefault().Value + $"&filters=customerid=in=({string.Join(",", retVal.Select(x => x.CustomerId).ToArray())})";
+            var addressDetails = await _addressService.Get(addressQuery);
+            retVal.ForEach(x =>
+            {
+                x.CustomerAddresses = 
+                ResponseToDynamic.ConvertTo(addressDetails.Where(y => y.CustomerId == x.CustomerId).ToList(), ResponseToDynamic.getFields(includes.FirstOrDefault().Value));
+            });
+            dynamic dynamicResponse = ResponseToDynamic.ConvertTo(retVal, ResponseToDynamic.getFields(query));
+
+            return dynamicResponse;
         }
     }
 }

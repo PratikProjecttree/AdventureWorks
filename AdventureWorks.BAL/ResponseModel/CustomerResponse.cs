@@ -25,7 +25,7 @@ namespace AdventureWorks.BAL.ResponseModel
         public string PasswordSalt { get; set; } = null!;
         public Guid Rowguid { get; set; }
         public DateTime ModifiedDate { get; set; }
-        public List<CustomerAddressResponse> CustomerAddresses { get; set; } = new List<CustomerAddressResponse>();
+        public dynamic? CustomerAddresses { get; set; }
         public List<SalesOrderHeaderResponse> SalesOrderHeaders { get; set; } = new List<SalesOrderHeaderResponse>();
     }
     public class CustomerResponseCustom

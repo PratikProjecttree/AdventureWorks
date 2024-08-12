@@ -8,8 +8,9 @@ using System.Threading.Tasks;
 
 namespace AdventureWorks.BAL.IService
 {
-    public interface ICustomerService
+    public interface IAddressService
     {
-        Task<dynamic> Get(string query);
+        Task<dynamic> GetDynamic(string query);
+        Task<List<CustomerAddressResponse>>  Get(string query);
     }
 }

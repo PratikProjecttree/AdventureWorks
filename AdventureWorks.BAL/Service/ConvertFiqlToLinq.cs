@@ -9,25 +9,31 @@ namespace AdventureWorks.BAL.Service
     {
         public static string FiqlToLinq(string fiql)
         {
-            if (string.IsNullOrEmpty(fiql)) { return "1=1"; }
+            if (string.IsNullOrEmpty(fiql)) { return string.Empty; }
 
             // Split by semicolon for AND, and comma for OR
             fiql = fiql.Replace(" AND ", ";");
             fiql = fiql.Replace(" OR ", ",");
             fiql = fiql.Replace(" and ", ";");
             fiql = fiql.Replace(" or ", ",");
+            fiql = fiql.Replace("<", "=lt=");
+            fiql = fiql.Replace(">", "=gt=");
+            fiql = fiql.Replace(">=", "=ge=");
+            fiql = fiql.Replace("<=", "=le=");
+            fiql = fiql.Replace("!=", "=ne=");
+
 
             var andConditions = SplitConditions(fiql, ',');
             var linqConditions = new List<string>();
 
-            foreach (var andCondition in andConditions)
+            foreach (var andCondition in andConditions.Where(condition => !string.IsNullOrEmpty(condition)))
             {
                 var orConditions = SplitConditions(andCondition, ';');
                 var linqOrConditions = new List<string>();
 
-                foreach (var orCondition in orConditions)
+                foreach (var orCondition in orConditions.Where(condition => !string.IsNullOrEmpty(condition)))
                 {
-                    if (orCondition.Contains(","))
+                    if (SplitConditions(orCondition, ',').Count() > 1)
                     {
                         var fiqlloopString = FiqlToLinqLoop(orCondition.TrimStart('(').TrimEnd(')'));
                         linqOrConditions.Add($"{fiqlloopString}");
@@ -69,22 +75,18 @@ namespace AdventureWorks.BAL.Service
         static string FiqlToLinqLoop(string fiql)
         {
             // Split by semicolon for AND, and comma for OR
-            fiql = fiql.Replace(" AND ", ";");
-            fiql = fiql.Replace(" OR ", ",");
-            fiql = fiql.Replace(" and ", ";");
-            fiql = fiql.Replace(" or ", ",");
 
             var andConditions = SplitConditions(fiql, ',');
             var linqConditions = new List<string>();
 
-            foreach (var andCondition in andConditions)
+            foreach (var andCondition in andConditions.Where(condition => !string.IsNullOrEmpty(condition)))
             {
                 var orConditions = SplitConditions(andCondition, ';');
                 var linqOrConditions = new List<string>();
 
-                foreach (var orCondition in orConditions)
+                foreach (var orCondition in orConditions.Where(condition => !string.IsNullOrEmpty(condition)))
                 {
-                    if (orCondition.Contains(","))
+                    if (SplitConditions(orCondition, ',').Count() > 1)
                     {
                         var fiqlloopString = FiqlToLinqLoop(orCondition.TrimStart('(').TrimEnd(')'));
                         linqOrConditions.Add($"{fiqlloopString}");
@@ -111,38 +113,79 @@ namespace AdventureWorks.BAL.Service
                         "" => "==",
                         "in" => "IN",
                         "out" => "NOT IN",
-                        "like" => "LIKE",
+                        "ilike" => "LIKE",
+                        "olike" => "NOT LIKE",
                         _ => throw new ArgumentException($"Unsupported operator: {op}")
                     };
 
-                    // Convert value if necessary (e.g., for strings add quotes)
                     if (linqOp == "IN")
                     {
-                        value = value.Trim('(', ')'); // remove parentheses
+                        value = value.Trim('(', ')');
                         var values = value.Split(',').Select(v => v.Trim()).ToList();
                         value = $"new [] {{ {string.Join(", ", values)} }}";
                         linqOrConditions.Add($"{property} in {value}");
                     }
                     else if (linqOp == "NOT IN")
                     {
-                        value = value.Trim('(', ')'); // remove parentheses
+                        value = value.Trim('(', ')');
                         var values = value.Split(',').Select(v => v.Trim()).ToList();
                         value = $"new [] {{ {string.Join(", ", values)} }}";
-                        linqOrConditions.Add($"{property} not in {value}");
+                        linqOrConditions.Add($"!({property} in {value})");
                     }
                     else if (linqOp == "LIKE")
                     {
-                        value = $"\"{value.Replace('*', '%')}\""; // replace '*' with '%'
-                        linqOrConditions.Add($"{property}.Contains({value})");
+                        if (value.StartsWith('*') && value.EndsWith('*'))
+                        {
+                            value = $"\"{value.Replace("*", "")}\"";
+                            linqOrConditions.Add($"{property}.Contains({value})");
+                        }
+                        else if (value.StartsWith('*'))
+                        {
+                            value = $"\"{value.Replace("*", "")}\"";
+                            linqOrConditions.Add($"{property}.EndsWith({value})");
+                        }
+                        else if (value.EndsWith('*'))
+                        {
+                            linqOrConditions.Add($"{property}.StartsWith({value})");
+                        }
+                    }
+                    else if (linqOp == "NOT LIKE")
+                    {
+                        if (value.StartsWith('*') && value.EndsWith('*'))
+                        {
+                            value = $"\"{value.Replace("*", "")}\"";
+                            linqOrConditions.Add($"!({property}.Contains({value}))");
+                        }
+                        else if (value.StartsWith('*'))
+                        {
+                            value = $"\"{value.Replace("*", "")}\"";
+                            linqOrConditions.Add($"!({property}.EndsWith({value}))");
+                        }
+                        else if (value.EndsWith('*'))
+                        {
+                            linqOrConditions.Add($"!({property}.StartsWith({value}))");
+                        }
                     }
                     else
                     {
-                        if (!int.TryParse(value, out _))
+                        if (!int.TryParse(value, out _) && !decimal.TryParse(value, out _))
                         {
-                            // String value
-                            value = $"\"{value}\"";
+                            value = value.Replace("'", "");
+                            if (value?.ToLower() == "null")
+                            {
+                                linqOrConditions.Add($"{property} {linqOp} null");
+                            }
+                            else
+                            {
+                                value = $"\"{value}\"";
+                                linqOrConditions.Add($"{property} {linqOp} {value}");
+                            }
                         }
-                        linqOrConditions.Add($"{property} {linqOp} {value}");
+                        else
+                        {
+                            linqOrConditions.Add($"{property} {linqOp} {value}");
+                        }
+
                     }
                 }
 
