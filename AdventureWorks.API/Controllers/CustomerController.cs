@@ -15,7 +15,7 @@ namespace AdventureWorks.API.Controllers
         {
             this.customerService = customerService;
         }
-        [HttpGet("{query?}")]
+        [HttpGet]
         public async Task<ActionResult<dynamic>> Get(string? query)
         {
             var response = await customerService.Get(query ?? "");

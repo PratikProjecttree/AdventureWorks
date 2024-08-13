@@ -25,20 +25,62 @@ namespace AdventureWorks.BAL.Service
         }
         public async Task<dynamic> Get(string query)
         {
-            IQueryable<Customer> result = context.Customers;
-            var customerResponse = await ResponseToDynamic.contextResponse(result, query);
 
+            IQueryable<Customer> result = context.Customers;
+            List<CustomerAddressResponse> addressDetails = new List<CustomerAddressResponse>();
+
+            var foundAddressFilter = false;
+            var includes = ResponseToDynamic.getInclude(query);
+            var customerFilters = ResponseToDynamic.getFilters(query);
+            var addressParts = new QueryIncludeModel();
+
+            if (includes.Any(x => x.objectName?.ToLower() == "customeraddresses"))
+            {
+                addressParts = includes.FirstOrDefault(x => x.objectName?.ToLower() == "customeraddresses") ?? new QueryIncludeModel();
+                if (!string.IsNullOrEmpty(addressParts.objectFilters))
+                {
+                    foundAddressFilter = true;
+                    addressDetails = await _addressService.Get(addressParts.objectQuery ?? "");
+                }
+            }
+
+            if (addressDetails.Any() && foundAddressFilter)
+            {
+                if (string.IsNullOrEmpty(customerFilters))
+                {
+                    query = query + $"&filters=customerid=in=({string.Join(",", addressDetails.Select(x => x.CustomerId).ToArray())})";
+                }
+            }
+
+            var customerResponse = await ResponseToDynamic.contextResponse(result, query);
             List<CustomerResponse> retVal = (JsonSerializer.Deserialize<List<CustomerResponse>>(JsonSerializer.Serialize(customerResponse))) ?? new List<CustomerResponse>();
 
-            var includes = ResponseToDynamic.getInclude(query);
 
-            var addressQuery = includes.FirstOrDefault().Value + $"&filters=customerid=in=({string.Join(",", retVal.Select(x => x.CustomerId).ToArray())})";
-            var addressDetails = await _addressService.Get(addressQuery);
-            retVal.ForEach(x =>
+            if (addressDetails.Any() && foundAddressFilter)
             {
-                x.CustomerAddresses = 
-                ResponseToDynamic.ConvertTo(addressDetails.Where(y => y.CustomerId == x.CustomerId).ToList(), ResponseToDynamic.getFields(includes.FirstOrDefault().Value));
-            });
+                if (!string.IsNullOrEmpty(customerFilters))
+                {
+                    retVal = retVal.Where(x => addressDetails.Any(y => y.CustomerId == x.CustomerId)).ToList();
+                }
+            }
+
+            if (includes.Any(x => x.objectName?.ToLower() == "customeraddresses") && !foundAddressFilter && retVal.Any())
+            {
+                addressParts = includes.FirstOrDefault(x => x.objectName?.ToLower() == "customeraddresses") ?? new QueryIncludeModel();
+                var addressQuery = (!string.IsNullOrEmpty(addressParts.objectQuery) ? addressParts.objectQuery + "&" : "") + $"filters=customerid=in=({string.Join(",", retVal.Select(x => x.CustomerId).ToArray())})";
+                addressDetails = await _addressService.Get(addressQuery);
+            }
+
+            if (addressDetails.Any() && retVal.Any())
+            {
+                retVal.ForEach(x =>
+                {
+                    x.CustomerAddresses =
+                    ResponseToDynamic.ConvertTo(addressDetails.Where(y => y.CustomerId == x.CustomerId).ToList(), addressParts.objectFields ?? "");
+                });
+            }
+
+
             dynamic dynamicResponse = ResponseToDynamic.ConvertTo(retVal, ResponseToDynamic.getFields(query));
 
             return dynamicResponse;

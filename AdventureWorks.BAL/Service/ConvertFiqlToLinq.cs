@@ -12,10 +12,10 @@ namespace AdventureWorks.BAL.Service
             if (string.IsNullOrEmpty(fiql)) { return string.Empty; }
 
             // Split by semicolon for AND, and comma for OR
-            fiql = fiql.Replace(" AND ", ";");
-            fiql = fiql.Replace(" OR ", ",");
-            fiql = fiql.Replace(" and ", ";");
-            fiql = fiql.Replace(" or ", ",");
+            // fiql = fiql.Replace(" AND ", ";");
+            // fiql = fiql.Replace(" OR ", ",");
+            // fiql = fiql.Replace(" and ", ";");
+            // fiql = fiql.Replace(" or ", ",");
             fiql = fiql.Replace("<", "=lt=");
             fiql = fiql.Replace(">", "=gt=");
             fiql = fiql.Replace(">=", "=ge=");
@@ -170,7 +170,6 @@ namespace AdventureWorks.BAL.Service
                     {
                         if (!int.TryParse(value, out _) && !decimal.TryParse(value, out _))
                         {
-                            value = value.Replace("'", "");
                             if (value?.ToLower() == "null")
                             {
                                 linqOrConditions.Add($"{property} {linqOp} null");

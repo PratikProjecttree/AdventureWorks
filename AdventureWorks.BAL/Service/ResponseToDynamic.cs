@@ -3,53 +3,101 @@ using System.Collections.Generic;
 using System.Linq.Dynamic.Core;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AdventureWorks.BAL.ResponseModel;
 
 namespace AdventureWorks.BAL.Service
 {
     public static class ResponseToDynamic
     {
-        public static string getFields(string query = "")
+        public static string getQueryParts(string query, string part)
         {
-            var queryParts = query.Split('&');
-            var fields = (queryParts.Where(x => x.StartsWith("fields=")).FirstOrDefault() ?? "").Replace("fields=", "");
-            fields = fields?.Trim() ?? string.Empty;
-            return fields;
+            var queryParts = SplitConditions(query, '&');
+            var result = (queryParts.Where(x => x.StartsWith($"{part}=")).FirstOrDefault() ?? "").Replace($"{part}=", "");
+            result = result?.Trim() ?? string.Empty;
+            return result;
         }
-        public static Dictionary<string, string> getInclude(string query = "")
+        public static string getSort(string query)
         {
-            Dictionary<string, string> keyValuePairs = new Dictionary<string, string>();
-
-            var queryParts = query.Split('&');
-            var include = (queryParts.Where(x => x.StartsWith("include=")).FirstOrDefault() ?? "").Replace("include=", "");
+            return getQueryParts(query, "sort");
+        }
+        public static string getFilters(string query)
+        {
+            return getQueryParts(query, "filters");
+        }
+        public static string getFields(string query)
+        {
+            return getQueryParts(query, "fields");
+        }
+        public static string getPageNo(string query)
+        {
+            return getQueryParts(query, "pageno");
+        }
+        public static string getPageSize(string query)
+        {
+            return getQueryParts(query, "pagesize");
+        }
+        public static IEnumerable<QueryIncludeModel> getInclude(string query)
+        {
+            List<QueryIncludeModel> queryIncludes = new();
+            var include = getQueryParts(query, "include");
             include = include?.Trim() ?? string.Empty;
             var listOfInclude = include.Split(';');
             foreach (var item in listOfInclude)
             {
-                var b = item.TrimEnd(')');
+                var queryInclude = new QueryIncludeModel();
 
-                var a = b.Split('(');
+                var b = item.TrimEnd('}');
+
+                var a = b.Split('{');
                 if (a.Length == 2)
-                    keyValuePairs.Add(a[0], a[1]);
+                {
+                    queryInclude.objectName = a[0];
+                    queryInclude.objectQuery = a[1];
+                    queryInclude.objectFields = ResponseToDynamic.getFields(queryInclude.objectQuery);
+                    queryInclude.objectFilters = ResponseToDynamic.getFilters(queryInclude.objectQuery);
+                }
                 else
-                    keyValuePairs.Add(item, "");
-            }
-            return keyValuePairs;
-        }
-        public static async Task<dynamic> contextResponse(IQueryable result, string query = "")
-        {
-            var queryParts = query.Split('&');
-            var filters = (queryParts.Where(x => x.StartsWith("filters=")).FirstOrDefault() ?? "").Replace("filters=", "");
-            var fields = (queryParts.Where(x => x.StartsWith("fields=")).FirstOrDefault() ?? "").Replace("fields=", "");
-            var sort = (queryParts.Where(x => x.StartsWith("sort=")).FirstOrDefault() ?? "").Replace("sort=", "");
+                    queryInclude.objectName = item;
 
-            int.TryParse((queryParts.Where(x => x.StartsWith("pageNo=")).FirstOrDefault() ?? "").Replace("pageNo=", ""), out int pageNo);
-            int.TryParse((queryParts.Where(x => x.StartsWith("pageSize=")).FirstOrDefault() ?? "").Replace("pageSize=", ""), out int pageSize);
+                queryIncludes.Add(queryInclude);
+            }
+            return queryIncludes;
+        }
+        private static IEnumerable<string> SplitConditions(string query, char separator)
+        {
+            int depth = 0;
+            List<int> splitIndexes = new List<int>();
+
+            for (int i = 0; i < query.Length; i++)
+            {
+                if (query[i] == '{') depth++;
+                if (query[i] == '}') depth--;
+                if (depth == 0 && query[i] == separator)
+                {
+                    splitIndexes.Add(i);
+                }
+            }
+
+            splitIndexes.Add(query.Length);
+
+            int start = 0;
+            foreach (int index in splitIndexes)
+            {
+                yield return query.Substring(start, index - start);
+                start = index + 1;
+            }
+        }
+        public static async Task<dynamic> contextResponse(IQueryable result, string query)
+        {
+            query = query.Replace("\\", "\\\\");
+            var filters = getFilters(query);
+            var fields = getFields(query);
+            var sort = getSort(query);
+
+            int.TryParse(getPageNo(query), out int pageNo);
+            int.TryParse(getPageSize(query), out int pageSize);
 
             filters = ConvertFiqlToLinq.FiqlToLinq(filters);
-
-            fields = fields?.Trim() ?? string.Empty;
-            filters = filters?.Trim() ?? string.Empty;
-            sort = sort?.Trim() ?? string.Empty;
 
             if (!string.IsNullOrEmpty(fields))
             {
