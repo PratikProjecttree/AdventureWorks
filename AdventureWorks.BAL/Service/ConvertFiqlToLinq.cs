@@ -147,6 +147,7 @@ namespace AdventureWorks.BAL.Service
                         }
                         else if (value.EndsWith('*'))
                         {
+                            value = $"\"{value.Replace("*", "")}\"";
                             linqOrConditions.Add($"{property}.StartsWith({value})");
                         }
                     }
@@ -164,6 +165,7 @@ namespace AdventureWorks.BAL.Service
                         }
                         else if (value.EndsWith('*'))
                         {
+                            value = $"\"{value.Replace("*", "")}\"";
                             linqOrConditions.Add($"!({property}.StartsWith({value}))");
                         }
                     }
