@@ -22,16 +22,16 @@ namespace AdventureWorks.BAL.Service
             _mapper = mapper;
             _dbConnection = dbConnection;
         }
-        public async Task<dynamic> GetDynamic(string query)
+        public async Task<dynamic> GetDynamic(string fields = "", string filters = "", string include = "", string sort = "", int pageNo = 0, int pageSize = 0)
         {
-            var retVal = await Get(query);
-            dynamic dynamicResponse = ResponseToDynamic.ConvertTo(retVal, ResponseToDynamic.getFields(query));
+            var retVal = await Get(fields, filters, include, sort, pageNo, pageSize);
+            dynamic dynamicResponse = ResponseToDynamic.ConvertTo(retVal, fields);
             return dynamicResponse;
         }
 
-        public async Task<List<CustomerAddressResponse>> Get(string query)
+        public async Task<List<CustomerAddressResponse>> Get(string fields = "", string filters = "", string include = "", string sort = "", int pageNo = 0, int pageSize = 0)
         {
-            IQueryable<CustomerAddressResponse> result = context.CustomerAddresses.Include(x => x.Address)
+            IQueryable<CustomerAddressResponse> result = context.CustomerAddresses
                               .Select(data => new CustomerAddressResponse()
                               {
                                   CustomerId = data.CustomerId,
@@ -47,7 +47,7 @@ namespace AdventureWorks.BAL.Service
                                   StateProvince = data.Address.StateProvince,
                               });
 
-            var addressResponse = await ResponseToDynamic.contextResponse(result, query);
+            var addressResponse = await ResponseToDynamic.contextResponse(result, fields, filters, sort, pageNo, pageSize);
             var retVal = (JsonSerializer.Deserialize<List<CustomerAddressResponse>>(JsonSerializer.Serialize(addressResponse))) ?? new List<CustomerAddressResponse>();
             return retVal;
         }

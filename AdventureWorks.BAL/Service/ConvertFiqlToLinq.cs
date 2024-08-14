@@ -21,6 +21,7 @@ namespace AdventureWorks.BAL.Service
             fiql = fiql.Replace(">=", "=ge=");
             fiql = fiql.Replace("<=", "=le=");
             fiql = fiql.Replace("!=", "=ne=");
+            fiql = fiql.Replace("\\", "\\\\");
 
 
             var andConditions = SplitConditions(fiql, ',');

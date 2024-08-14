@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace AdventureWorks.BAL.IService
 {
-    public interface IAddressService
+    public interface IProductService
     {
         Task<dynamic> GetDynamic(string fields = "", string filters = "", string include = "", string sort = "", int pageNo = 0, int pageSize = 0);
-        Task<List<CustomerAddressResponse>> Get(string fields = "", string filters = "", string include = "", string sort = "", int pageNo = 0, int pageSize = 0);
+        Task<List<ProductResponse>> Get(string fields = "", string filters = "", string include = "", string sort = "", int pageNo = 0, int pageSize = 0);
     }
 }

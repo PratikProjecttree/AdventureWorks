@@ -19,6 +19,6 @@ namespace AdventureWorks.BAL.ResponseModel
         public decimal LineTotal { get; set; }
         public Guid Rowguid { get; set; }
         public DateTime ModifiedDate { get; set; }
-        public ProductResponse Product { get; set; }
+        public dynamic? Product { get; set; }
     }
 }

@@ -26,7 +26,7 @@ namespace AdventureWorks.BAL.ResponseModel
         public Guid Rowguid { get; set; }
         public DateTime ModifiedDate { get; set; }
         public dynamic? CustomerAddresses { get; set; }
-        public List<SalesOrderHeaderResponse> SalesOrderHeaders { get; set; } = new List<SalesOrderHeaderResponse>();
+        public dynamic? SalesOrderHeaders { get; set; }
     }
     public class CustomerResponseCustom
     {

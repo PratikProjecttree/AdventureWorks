@@ -10,6 +10,7 @@ namespace AdventureWorks.BAL.IService
 {
     public interface ICustomerService
     {
-        Task<dynamic> Get(string query);
+        Task<dynamic> GetDynamic(string fields = "", string filters = "", string include = "", string sort = "", int pageNo = 0, int pageSize = 0);
+        Task<List<CustomerResponse>> Get(string fields = "", string filters = "", string include = "", string sort = "", int pageNo = 0, int pageSize = 0);
     }
 }

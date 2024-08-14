@@ -34,12 +34,7 @@ namespace AdventureWorks.BAL.ResponseModel
         public string? Comment { get; set; }
         public Guid Rowguid { get; set; }
         public DateTime ModifiedDate { get; set; }
-        public dynamic SalesOrderDetailss
-        {
-            get => SalesOrderDetails;
-        }
-        [JsonIgnore]
-        public List<SalesOrderDetailResponse> SalesOrderDetails { get; set; } = new List<SalesOrderDetailResponse>();
+        public dynamic? SalesOrderDetails { get; set; }
     }
     public partial class SalesOrderHeaderResponseCustom
     {
