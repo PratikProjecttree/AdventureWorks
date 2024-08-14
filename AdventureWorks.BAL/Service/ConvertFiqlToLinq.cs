@@ -16,12 +16,12 @@ namespace AdventureWorks.BAL.Service
             // fiql = fiql.Replace(" OR ", ",");
             // fiql = fiql.Replace(" and ", ";");
             // fiql = fiql.Replace(" or ", ",");
-            fiql = fiql.Replace("<", "=lt=");
-            fiql = fiql.Replace(">", "=gt=");
+            fiql = fiql.Replace("\\", "\\\\");
             fiql = fiql.Replace(">=", "=ge=");
             fiql = fiql.Replace("<=", "=le=");
             fiql = fiql.Replace("!=", "=ne=");
-            fiql = fiql.Replace("\\", "\\\\");
+            fiql = fiql.Replace("<", "=lt=",comparisonType: StringComparison.CurrentCulture);
+            fiql = fiql.Replace(">", "=gt=");
 
 
             var andConditions = SplitConditions(fiql, ',');
@@ -122,14 +122,14 @@ namespace AdventureWorks.BAL.Service
                     if (linqOp == "IN")
                     {
                         value = value.Trim('(', ')');
-                        var values = value.Split(',').Select(v => v.Trim()).ToList();
+                        var values = value.Split(',').Select(v => (!int.TryParse(value, out _) && !decimal.TryParse(value, out _)) ? "\"" + v.Trim() + "\"" : v.Trim()).ToList();
                         value = $"new [] {{ {string.Join(", ", values)} }}";
                         linqOrConditions.Add($"{property} in {value}");
                     }
                     else if (linqOp == "NOT IN")
                     {
                         value = value.Trim('(', ')');
-                        var values = value.Split(',').Select(v => v.Trim()).ToList();
+                        var values = value.Split(',').Select(v => (!int.TryParse(value, out _) && !decimal.TryParse(value, out _)) ? "\"" + v.Trim() + "\"" : v.Trim()).ToList();
                         value = $"new [] {{ {string.Join(", ", values)} }}";
                         linqOrConditions.Add($"!({property} in {value})");
                     }
