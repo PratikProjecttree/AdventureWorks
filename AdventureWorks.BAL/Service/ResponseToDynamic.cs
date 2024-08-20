@@ -156,7 +156,12 @@ namespace AdventureWorks.BAL.Service
         public static async Task<dynamic> contextResponse(IQueryable result, string fields, string filters, string sort, int pageNo = 0, int pageSize = 0)
         {
 
-            filters = ConvertFiqlToLinq.FiqlToLinq(filters ?? "");
+            var filtersAndProperties = ConvertFiqlToLinq.FiqlToLinq(filters ?? "");
+            filters = filtersAndProperties.filters;
+            var _filterFields = filtersAndProperties.properties.Where(x => !string.IsNullOrEmpty(x) && !fields.Split(',').Any(y => y.ToLower() == x.ToLower())).ToList();
+
+            if (_filterFields.Count > 0 && !string.IsNullOrEmpty(fields))
+                fields = string.Concat(fields, ",", string.Join(",", _filterFields.ToArray()));
 
             if (!string.IsNullOrEmpty(fields))
             {

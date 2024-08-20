@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using AdventureWorks.BAL.ResponseModel;
 namespace AdventureWorks.BAL.Service
 {
     public static class ConvertFiqlToLinq
     {
-        public static string FiqlToLinq(string fiql)
+        public static FiltersAndProperties FiqlToLinq(string fiql)
         {
-            if (string.IsNullOrEmpty(fiql)) { return string.Empty; }
+            FiltersAndProperties filtersAndProperties = new FiltersAndProperties();
+
+            if (string.IsNullOrEmpty(fiql)) { return filtersAndProperties; }
 
             // Split by semicolon for AND, and comma for OR
             // fiql = fiql.Replace(" AND ", ";");
@@ -20,7 +23,7 @@ namespace AdventureWorks.BAL.Service
             fiql = fiql.Replace(">=", "=ge=");
             fiql = fiql.Replace("<=", "=le=");
             fiql = fiql.Replace("!=", "=ne=");
-            fiql = fiql.Replace("<", "=lt=",comparisonType: StringComparison.CurrentCulture);
+            fiql = fiql.Replace("<", "=lt=", comparisonType: StringComparison.CurrentCulture);
             fiql = fiql.Replace(">", "=gt=");
 
 
@@ -37,19 +40,21 @@ namespace AdventureWorks.BAL.Service
                     if (SplitConditions(orCondition, ',').Count() > 1)
                     {
                         var fiqlloopString = FiqlToLinqLoop(orCondition.TrimStart('(').TrimEnd(')'));
-                        linqOrConditions.Add($"{fiqlloopString}");
+                        linqOrConditions.Add($"{fiqlloopString.filters}");
+                        filtersAndProperties.properties.AddRange(fiqlloopString.properties);
                     }
                     else
                     {
                         var fiqlloopString = FiqlToLinqLoop(orCondition.TrimStart('(').TrimEnd(')'));
-                        linqOrConditions.Add($"{fiqlloopString}");
+                        linqOrConditions.Add($"{fiqlloopString.filters}");
+                        filtersAndProperties.properties.AddRange(fiqlloopString.properties);
                     }
                 }
 
                 linqConditions.Add($"{startRoundBracate(linqOrConditions)}{string.Join(" AND ", linqOrConditions)}{endRoundBracate(linqOrConditions)}");
             }
-
-            return $"{startRoundBracate(linqConditions)}{string.Join(" OR ", linqConditions)}{endRoundBracate(linqConditions)}";
+            filtersAndProperties.filters = $"{startRoundBracate(linqConditions)}{string.Join(" OR ", linqConditions)}{endRoundBracate(linqConditions)}";
+            return filtersAndProperties;
         }
         static string startRoundBracate(List<string> conditions)
         {
@@ -73,8 +78,9 @@ namespace AdventureWorks.BAL.Service
                 return "";
             }
         }
-        static string FiqlToLinqLoop(string fiql)
+        static FiltersAndProperties FiqlToLinqLoop(string fiql)
         {
+            FiltersAndProperties filtersAndProperties = new FiltersAndProperties();
             // Split by semicolon for AND, and comma for OR
 
             var andConditions = SplitConditions(fiql, ',');
@@ -90,9 +96,10 @@ namespace AdventureWorks.BAL.Service
                     if (SplitConditions(orCondition, ',').Count() > 1)
                     {
                         var fiqlloopString = FiqlToLinqLoop(orCondition.TrimStart('(').TrimEnd(')'));
-                        linqOrConditions.Add($"{fiqlloopString}");
+                        linqOrConditions.Add($"{fiqlloopString.filters}");
+                        filtersAndProperties.properties.AddRange(fiqlloopString.properties);
                     }
-                    var parts = orCondition.Split(new[] { '=' }, 3);
+                    var parts = SplitConditions(orCondition, '=').ToArray();
                     if (parts.Length < 3)
                     {
                         throw new ArgumentException("Invalid FIQL query");
@@ -100,8 +107,9 @@ namespace AdventureWorks.BAL.Service
 
                     string property = parts[0];
                     string op = parts[1];
-                    string value = parts[2];
-
+                    string value = parts[2].Trim('(', ')');
+                    
+                    filtersAndProperties.properties.Add(property);
                     string linqOp = op switch
                     {
                         "gt" => ">",
@@ -121,14 +129,12 @@ namespace AdventureWorks.BAL.Service
 
                     if (linqOp == "IN")
                     {
-                        value = value.Trim('(', ')');
                         var values = value.Split(',').Select(v => (!int.TryParse(value, out _) && !decimal.TryParse(value, out _)) ? "\"" + v.Trim() + "\"" : v.Trim()).ToList();
                         value = $"new [] {{ {string.Join(", ", values)} }}";
                         linqOrConditions.Add($"{property} in {value}");
                     }
                     else if (linqOp == "NOT IN")
                     {
-                        value = value.Trim('(', ')');
                         var values = value.Split(',').Select(v => (!int.TryParse(value, out _) && !decimal.TryParse(value, out _)) ? "\"" + v.Trim() + "\"" : v.Trim()).ToList();
                         value = $"new [] {{ {string.Join(", ", values)} }}";
                         linqOrConditions.Add($"!({property} in {value})");
@@ -193,7 +199,8 @@ namespace AdventureWorks.BAL.Service
 
                 linqConditions.Add($"{startRoundBracate(linqOrConditions)}{string.Join(" AND ", linqOrConditions)}{endRoundBracate(linqOrConditions)}");
             }
-            return $"{startRoundBracate(linqConditions)}{string.Join(" OR ", linqConditions)}{endRoundBracate(linqConditions)}";
+            filtersAndProperties.filters = $"{startRoundBracate(linqConditions)}{string.Join(" OR ", linqConditions)}{endRoundBracate(linqConditions)}";
+            return filtersAndProperties;
         }
 
         private static IEnumerable<string> SplitConditions(string query, char separator)

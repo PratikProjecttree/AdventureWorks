@@ -25,7 +25,7 @@ namespace AdventureWorks.BAL.ResponseModel
         public string? ThumbnailPhotoFileName { get; set; }
         public Guid Rowguid { get; set; }
         public DateTime ModifiedDate { get; set; }
-        public ProductCategoryResponse Category { get; set; }
+        public ProductCategoryResponse? Category { get; set; }
     }
 
 }
