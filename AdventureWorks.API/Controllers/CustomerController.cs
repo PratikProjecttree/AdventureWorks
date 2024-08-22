@@ -31,6 +31,4 @@ namespace AdventureWorks.API.Controllers
             });
         }
     }
-
-
 }
