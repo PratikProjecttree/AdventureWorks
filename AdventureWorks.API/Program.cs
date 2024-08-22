@@ -12,9 +12,12 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-builder.Services.AddDbContext<dbContext>(options =>
-       options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<dbContext>((serviceProvider, options) =>
+  {
+      var interceptor = serviceProvider.GetRequiredService<QueryCountInterceptor>();
+      options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+      options.AddInterceptors(interceptor);
+  });
 
 // Add services to the container.
 
@@ -31,6 +34,8 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<ISalesOrderHeaderService, SalesOrderHeaderService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<QueryTrackerService>();
+builder.Services.AddScoped<QueryCountInterceptor>();
 builder.Services.AddTransient<IDbConnection>(provider => new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
 #endregion
 
