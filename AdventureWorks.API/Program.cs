@@ -1,3 +1,4 @@
+using AdventureWorks.API;
 using AdventureWorks.BAL.IService;
 using AdventureWorks.BAL.Mapper;
 using AdventureWorks.BAL.Service;
@@ -49,7 +50,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseMiddleware<QueryTrackerMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
