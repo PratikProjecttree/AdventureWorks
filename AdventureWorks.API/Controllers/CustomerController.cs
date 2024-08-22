@@ -13,8 +13,8 @@ namespace AdventureWorks.API.Controllers
     [ApiController]
     public class CustomerController : ControllerBase
     {
-        private readonly ICustomerService _customerService;
         private readonly QueryTrackerService _queryTracker;
+        private readonly ICustomerService _customerService;
         public CustomerController(ICustomerService customerService, QueryTrackerService queryTracker)
         {
             this._customerService = customerService;
