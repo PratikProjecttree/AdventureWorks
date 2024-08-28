@@ -52,6 +52,7 @@ namespace AdventureWorks.BAL.Service
                 SalesPerson = data.SalesPerson,
                 Suffix = data.Suffix,
                 Title = data.Title,
+                SalesOrderCount = data.SalesOrderHeaders.Count(),
             });
 
             List<CustomerAddressResponse> addressDetails = new List<CustomerAddressResponse>();
@@ -76,10 +77,7 @@ namespace AdventureWorks.BAL.Service
 
             if (addressDetails.Any() && foundAddressFilter)
             {
-                if (string.IsNullOrEmpty(filters))
-                {
-                    filters = $"customerid=in=({string.Join(",", addressDetails.Select(x => x.CustomerId).ToArray())})";
-                }
+                filters = (string.IsNullOrEmpty(filters) ? "" : "(" + filters + ");") + $"customerid=in=({string.Join(",", addressDetails.Select(x => x.CustomerId).ToArray())})";
             }
 
             /*Sales Order Detail add*/
@@ -95,10 +93,7 @@ namespace AdventureWorks.BAL.Service
 
             if (salesOrders.Any() && foundSalesOrderFilter)
             {
-                if (string.IsNullOrEmpty(filters))
-                {
-                    filters = (string.IsNullOrEmpty(filters) ? "" : ";") + $"customerid=in=({string.Join(",", salesOrders.Select(x => x.CustomerId).ToArray())})";
-                }
+                filters = (string.IsNullOrEmpty(filters) ? "" : "(" + filters + ");") + $"customerid=in=({string.Join(",", salesOrders.Select(x => x.CustomerId).ToArray())})";
             }
 
 

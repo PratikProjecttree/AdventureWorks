@@ -76,10 +76,7 @@ namespace AdventureWorks.BAL.Service
 
             if (salesOrderDetails.Any() && foundSalesOrderFilter)
             {
-                if (string.IsNullOrEmpty(filters))
-                {
-                    filters = $"salesorderid=in=({string.Join(",", salesOrderDetails.Select(x => x.SalesOrderId).ToArray())})";
-                }
+                filters = (string.IsNullOrEmpty(filters) ? "" : "(" + filters + ");") + $"salesorderid=in=({string.Join(",", salesOrderDetails.Select(x => x.SalesOrderId).ToArray())})";
             }
 
             var SalesOrderHeaderResponse = await ResponseToDynamic.contextResponse(result, fields, filters, sort, pageNo, pageSize);
@@ -144,10 +141,7 @@ namespace AdventureWorks.BAL.Service
 
             if (productDetail.Any() && foundProductDetailFilter)
             {
-                if (string.IsNullOrEmpty(filters))
-                {
-                    filters = $"productid=in=({string.Join(",", productDetail.Select(x => x.ProductId).ToArray())})";
-                }
+                filters = (string.IsNullOrEmpty(filters) ? "" : "(" + filters + ");") + $"productid=in=({string.Join(",", productDetail.Select(x => x.ProductId).ToArray())})";
             }
 
             var salesOrderDetailResponse = await ResponseToDynamic.contextResponse(result, fields, filters, sort, pageNo, pageSize);
@@ -171,7 +165,7 @@ namespace AdventureWorks.BAL.Service
             {
                 retVal.ForEach(x =>
                 {
-                    x.Product = ResponseToDynamic.ConvertTo(productDetail.Where(y => y.ProductId == x.ProductId).ToList(), productDetailParts.fields ?? "");
+                    x.Product = ResponseToDynamic.ConvertTo(productDetail.Where(y => y.ProductId == x.ProductId).FirstOrDefault(), productDetailParts.fields ?? "");
                 });
             }
             return retVal;

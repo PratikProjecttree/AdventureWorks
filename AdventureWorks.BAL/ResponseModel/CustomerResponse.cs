@@ -23,6 +23,7 @@ namespace AdventureWorks.BAL.ResponseModel
         public string? Phone { get; set; }
         public string PasswordHash { get; set; } = null!;
         public string PasswordSalt { get; set; } = null!;
+        public int SalesOrderCount { get; set; }
         public Guid Rowguid { get; set; }
         public DateTime ModifiedDate { get; set; }
         public dynamic? CustomerAddresses { get; set; }
